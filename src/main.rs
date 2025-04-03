@@ -1,10 +1,42 @@
-use std::{io, net::UdpSocket};
+use std::{io, net::UdpSocket, thread};
 
 fn main() {
     println!("Start!");
 
-    let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
+    thread::spawn(|| {
+        let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
 
+        loop {
+            let mut buf = [0; 5];
+            let (number_of_bytes, src_addr) =
+                sock.recv_from(&mut buf).expect("Didn't receive data");
+            let msg = String::from_utf8_lossy(&buf[..number_of_bytes]).to_string();
+            println!("Received {} bytes from {}: '{}'", number_of_bytes, src_addr, msg);
+
+            if msg == "Hello" {
+                println!("handshaking");
+                let con = UdpSocket::bind("127.0.0.1:0").unwrap();
+                let port = con.local_addr().unwrap().port();
+                let buf = format!("Connect port {}", port);
+                sock.send_to(buf.as_bytes(), src_addr).unwrap();
+                //echo "Hello" | nc -u 127.0.0.1 8080
+
+            }
+        }
+    });
+
+    //fs::read_to_string("config").unwrap();
+
+    let ctrl_hndl = thread::spawn(|| {
+        control();
+    });
+
+    ctrl_hndl.join().unwrap();
+
+    println!("End!");
+}
+
+fn control() {
     loop {
         let mut cmd = String::new();
 
@@ -14,11 +46,11 @@ fn main() {
 
         match cmd.trim() {
             "send" => {
-                let buf = "Hello UDP!".as_bytes();
-                sock.send_to(buf, "127.0.0.1:8080").unwrap();
+                /*let buf = "Hello UDP!".as_bytes();
+                sock.send_to(buf, "127.0.0.1:8080").unwrap();*/
             }
             "receive" => {
-                let mut buf = [0; 1024];
+                /*let mut buf = [0; 1024];
                 let (number_of_bytes, src_addr) = sock.recv_from(&mut buf)
                                         .expect("Didn't receive data");
                 println!(
@@ -26,7 +58,7 @@ fn main() {
                     number_of_bytes,
                     src_addr,
                     String::from_utf8_lossy(&buf[..number_of_bytes])
-                );
+                );*/
             }
             "exit" => {
                 break;
@@ -34,6 +66,4 @@ fn main() {
             _ => println!("Unknown command!"),
         }
     }
-
-    println!("End!");
 }
