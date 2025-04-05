@@ -1,6 +1,6 @@
 use std::{net::UdpSocket, sync::mpsc::channel, thread};
 
-use crate::msg_exchange::MsgExchange;
+use crate::msg_exchange::{Msg, MsgExchange};
 
 pub fn start() {
     thread::spawn(|| {
@@ -45,5 +45,9 @@ fn start_in_thread() {
 }
 
 fn use_thread(con: UdpSocket, mx: MsgExchange) {
-
+    mx.snd.send(Msg::new("masg".to_string(), "hello".to_string())).unwrap();
+    let buf = [1];
+    con.send(&buf).unwrap();
+    let msg = mx.rcv.recv().unwrap();
+    println!("{:?}", msg);
 }

@@ -14,7 +14,17 @@ impl MsgExchange {
     }
 }
 
+#[derive(Debug)]
 pub struct Msg {
     key: String,
     value: String
+}
+
+impl Msg {
+    pub fn new(key: String, value: String) -> Msg {
+        Msg{
+            key,
+            value
+        }
+    }
 }
