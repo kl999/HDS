@@ -1,4 +1,4 @@
-use std::{net::UdpSocket, sync::mpsc::channel, thread};
+use std::{collections::HashMap, net::UdpSocket, sync::mpsc::channel, thread};
 
 use crate::msg_exchange::{Msg, MsgExchange};
 
@@ -12,6 +12,7 @@ fn start_in_thread() {
     let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
 
     let mut mxs = vec![];
+    let mut state: HashMap<String, String> = HashMap::new();
 
     loop {
         let mut buf = [0; 5];
@@ -37,7 +38,7 @@ fn start_in_thread() {
 
             mxs.push(soc_mx);
 
-            thread::spawn(|| {
+            thread::spawn(move || {
                 use_thread(con, con_mx);
             });
         }
@@ -45,7 +46,7 @@ fn start_in_thread() {
 }
 
 fn use_thread(con: UdpSocket, mx: MsgExchange) {
-    mx.snd.send(Msg::new("masg".to_string(), "hello".to_string())).unwrap();
+    mx.snd.send(Msg::new("msg".to_string(), "hello".to_string())).unwrap();
     let buf = [1];
     con.send(&buf).unwrap();
     let msg = mx.rcv.recv().unwrap();

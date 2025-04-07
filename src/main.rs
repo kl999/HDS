@@ -1,18 +1,14 @@
 use std::{io, thread};
 
-mod msg_exchange;
 mod hds;
+mod msg_exchange;
 
 fn main() {
     println!("Start!");
 
     hds::start();
 
-    let ctrl_hndl = thread::spawn(|| {
-        control();
-    });
-
-    ctrl_hndl.join().unwrap();
+    control();
 
     println!("End!");
 }
@@ -26,6 +22,19 @@ fn control() {
         println!("Command: {}", cmd);
 
         match cmd.trim() {
+            "set" => {
+                let mut param = String::new();
+                io::stdin().read_line(&mut param).expect("Error read_line");
+
+                let params_split = param.split(":");
+
+                println!("Command set. Params: {:?}", params_split);
+            }
+            "get" => {
+                let mut param = String::new();
+                io::stdin().read_line(&mut param).expect("Error read_line");
+                println!("Get {}", param)
+            }
             "exit" => {
                 break;
             }
