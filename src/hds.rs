@@ -2,13 +2,13 @@ use std::{collections::HashMap, net::UdpSocket, sync::mpsc::channel, thread};
 
 use crate::msg_exchange::{Msg, MsgExchange};
 
-pub fn start() {
-    thread::spawn(|| {
-        start_in_thread();
+pub fn start(mx: MsgExchange) {
+    thread::spawn(move || {
+        start_in_thread(mx);
     });
 }
 
-fn start_in_thread() {
+fn start_in_thread(mx: MsgExchange) {
     let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
 
     let mut mxs = vec![];
@@ -31,10 +31,7 @@ fn start_in_thread() {
             sock.send_to(buf.as_bytes(), src_addr).unwrap();
             //echo "Hello" | nc -u -w1 127.0.0.1 8080
 
-            let (soc_rx, soc_tx) = channel();
-            let (con_rx, con_tx) = channel();
-            let soc_mx = MsgExchange::new(con_rx, soc_tx);
-            let con_mx = MsgExchange::new(soc_rx, con_tx);
+            let (soc_mx, con_mx) = MsgExchange::make_pair();
 
             mxs.push(soc_mx);
 

@@ -1,4 +1,4 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct MsgExchange {
     pub snd: Sender<Msg>,
@@ -12,12 +12,22 @@ impl MsgExchange {
             rcv
         }
     }
+
+    pub fn make_pair() -> (MsgExchange, MsgExchange) {
+        let (a_rx, b_tx) = channel();
+        let (b_rx, a_tx) = channel();
+
+        let a = MsgExchange::new(a_rx, a_tx);
+        let b = MsgExchange::new(b_rx, b_tx);
+
+        (a, b)
+    }
 }
 
 #[derive(Debug)]
 pub struct Msg {
-    key: String,
-    value: String
+    pub key: String,
+    pub value: String
 }
 
 impl Msg {
@@ -27,4 +37,9 @@ impl Msg {
             value
         }
     }
+}
+
+pub enum Command {
+    Set(Msg),
+    Get(String)
 }
