@@ -40,11 +40,13 @@ fn control(hds: Hds) {
                 io::stdin().read_line(&mut param).expect("Error read_line");
 
                 hds.messenger
-                    .snd
-                    .send(Msg::new("get".to_string(), param.clone()))
-                    .unwrap();
+                .snd
+                .send(Msg::new("get".to_string(), param.clone()))
+                .unwrap();
 
-                let msg = hds.messenger.rcv.recv().unwrap();
+                let msg = hds.messenger
+                .rcv
+                .recv().unwrap();
                 println!("key '{param}' is '{}'", msg.value)
             }
             "exit" => {

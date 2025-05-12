@@ -27,21 +27,37 @@ impl Hds {
 fn start_in_thread(mx: MsgExchange) {
     let _sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
 
-    let state = HashMap::new();
+    let mut state = HashMap::new();
 
     loop {
-        get_command(&mx, &state);
+        get_command(&mx, &mut state);
     }
 }
 
-fn get_command(mx: &MsgExchange, _state: &HashMap<String, String>) {
+fn get_command(mx: &MsgExchange, state: &mut HashMap<String, String>) {
     match mx.rcv.recv_timeout(Duration::from_millis(10)) {
         Ok(msg) => match msg.key.trim() {
             "set" => {
-                println!("set {}", msg.value)
+                //println!("set {}", msg.value)
+
+                let prm_split: Vec<&str> = msg.value.split(':').collect();
+
+                println!("{:?}",prm_split);
+
+                state.insert(prm_split[0].to_string(), prm_split[1].to_string());
             }
             "get" => {
-                println!("get {}", msg.value)}
+                //println!("get {}", msg.value)
+
+                if state.contains_key(&msg.value) {
+                    mx.snd
+                    .send(Msg {
+                        key: "Get response".to_string(),
+                        value: state[&msg.value].clone(),
+                    })
+                    .unwrap();
+                }
+            }
             _ => {
                 mx.snd
                     .send(Msg {
