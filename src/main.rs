@@ -1,5 +1,6 @@
+use hds::Hds;
+use msg_exchange::Msg;
 use std::io;
-use msg_exchange::{Msg, MsgExchange};
 
 mod hds;
 mod msg_exchange;
@@ -7,16 +8,14 @@ mod msg_exchange;
 fn main() {
     println!("Start!");
 
-    let (worker_mx, control_mx) = MsgExchange::make_pair();
+    let hds = Hds::new();
 
-    hds::start(worker_mx);
-
-    control(control_mx);
+    control(hds);
 
     println!("End!");
 }
 
-fn control(mx: MsgExchange) {
+fn control(hds: Hds) {
     loop {
         let mut cmd = String::new();
 
@@ -26,19 +25,27 @@ fn control(mx: MsgExchange) {
 
         match cmd.trim() {
             "set" => {
+                println!("Write '[key]:[value]' to set");
                 let mut param = String::new();
                 io::stdin().read_line(&mut param).expect("Error read_line");
 
-                let mut params_split = param.split(":");
-
-                println!("Command set. Params: {:?}", params_split);
-
-                mx.snd.send(Msg::new(params_split.next().unwrap().to_string(), params_split.next().unwrap().to_string())).unwrap();
+                hds.messenger
+                    .snd
+                    .send(Msg::new("set".to_string(), param))
+                    .unwrap();
             }
             "get" => {
+                println!("Write '[key]' to get");
                 let mut param = String::new();
                 io::stdin().read_line(&mut param).expect("Error read_line");
-                println!("Get {}", param)
+
+                hds.messenger
+                    .snd
+                    .send(Msg::new("get".to_string(), param.clone()))
+                    .unwrap();
+
+                let msg = hds.messenger.rcv.recv().unwrap();
+                println!("key '{param}' is '{}'", msg.value)
             }
             "exit" => {
                 break;

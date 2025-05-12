@@ -1,19 +1,61 @@
-use std::{collections::HashMap, net::UdpSocket, sync::mpsc::channel, thread};
+use std::{
+    collections::HashMap,
+    net::UdpSocket,
+    thread::{self, JoinHandle},
+    time::Duration,
+};
 
 use crate::msg_exchange::{Msg, MsgExchange};
 
-pub fn start(mx: MsgExchange) {
-    thread::spawn(move || {
-        start_in_thread(mx);
-    });
+pub struct Hds {
+    pub handle: JoinHandle<()>,
+    pub messenger: MsgExchange,
+}
+
+impl Hds {
+    pub fn new() -> Hds {
+        let (messenger, away) = MsgExchange::make_pair();
+
+        let handle = thread::spawn(move || {
+            start_in_thread(away);
+        });
+
+        Hds { handle, messenger }
+    }
 }
 
 fn start_in_thread(mx: MsgExchange) {
-    let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
+    let _sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
 
-    let mut mxs = vec![];
-    let mut state: HashMap<String, String> = HashMap::new();
+    let state = HashMap::new();
 
+    loop {
+        get_command(&mx, &state);
+    }
+}
+
+fn get_command(mx: &MsgExchange, _state: &HashMap<String, String>) {
+    match mx.rcv.recv_timeout(Duration::from_millis(10)) {
+        Ok(msg) => match msg.key.trim() {
+            "set" => {
+                println!("set {}", msg.value)
+            }
+            "get" => {
+                println!("get {}", msg.value)}
+            _ => {
+                mx.snd
+                    .send(Msg {
+                        key: "Unknown error".to_string(),
+                        value: String::new(),
+                    })
+                    .unwrap();
+            }
+        },
+        Err(_err) => {}
+    }
+}
+
+/*fn for_ref(sock: UdpSocket, mut state: HashMap<String, String>) {
     loop {
         let mut buf = [0; 5];
         let (number_of_bytes, src_addr) = sock.recv_from(&mut buf).expect("Didn't receive data");
@@ -33,7 +75,7 @@ fn start_in_thread(mx: MsgExchange) {
 
             let (soc_mx, con_mx) = MsgExchange::make_pair();
 
-            mxs.push(soc_mx);
+            //mxs.push(soc_mx);
 
             thread::spawn(move || {
                 use_thread(con, con_mx);
@@ -43,9 +85,11 @@ fn start_in_thread(mx: MsgExchange) {
 }
 
 fn use_thread(con: UdpSocket, mx: MsgExchange) {
-    mx.snd.send(Msg::new("msg".to_string(), "hello".to_string())).unwrap();
+    mx.snd
+        .send(Msg::new("msg".to_string(), "hello".to_string()))
+        .unwrap();
     let buf = [1];
     con.send(&buf).unwrap();
     let msg = mx.rcv.recv().unwrap();
     println!("{:?}", msg);
-}
+}*/

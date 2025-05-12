@@ -39,7 +39,7 @@ impl Msg {
     }
 }
 
-pub enum Command {
+/*pub enum Command {
     Set(Msg),
     Get(String)
-}
+}*/
