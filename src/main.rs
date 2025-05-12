@@ -28,20 +28,22 @@ fn control(hds: Hds) {
                 println!("Write '[key]:[value]' to set");
                 let mut param = String::new();
                 io::stdin().read_line(&mut param).expect("Error read_line");
+                let param = param.trim();
 
                 hds.messenger
                     .snd
-                    .send(Msg::new("set".to_string(), param))
+                    .send(Msg::new("set".to_string(), param.to_string()))
                     .unwrap();
             }
             "get" => {
                 println!("Write '[key]' to get");
                 let mut param = String::new();
                 io::stdin().read_line(&mut param).expect("Error read_line");
+                let param = param.trim();
 
                 hds.messenger
                 .snd
-                .send(Msg::new("get".to_string(), param.clone()))
+                .send(Msg::new("get".to_string(), param.to_string()))
                 .unwrap();
 
                 let msg = hds.messenger
