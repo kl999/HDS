@@ -4,6 +4,7 @@ use std::io;
 
 mod hds;
 mod msg_exchange;
+mod socket_worker;
 
 fn main() {
     println!("Start!");
