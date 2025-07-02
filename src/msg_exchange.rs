@@ -25,17 +25,13 @@ impl MsgExchange {
 }
 
 #[derive(Debug)]
-pub struct Msg {
-    pub key: String,
-    pub value: String
+pub enum Msg {
+    Kvp(String, String)
 }
 
 impl Msg {
     pub fn new(key: String, value: String) -> Msg {
-        Msg{
-            key,
-            value
-        }
+        Msg::Kvp(key, value)
     }
 }
 

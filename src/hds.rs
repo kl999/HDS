@@ -39,11 +39,11 @@ fn start_in_thread(mx: MsgExchange) {
 
 fn get_command(mx: &MsgExchange, state: &mut HashMap<String, String>) {
     match mx.rcv.recv_timeout(Duration::from_millis(10)) {
-        Ok(msg) => match msg.key.trim() {
+        Ok(Msg::Kvp(key, value)) => match key.trim() {
             "set" => {
                 //println!("set {}", msg.value)
 
-                let prm_split: Vec<&str> = msg.value.split(':').collect();
+                let prm_split: Vec<&str> = value.split(':').collect();
 
                 println!("{:?}",prm_split);
 
@@ -52,21 +52,15 @@ fn get_command(mx: &MsgExchange, state: &mut HashMap<String, String>) {
             "get" => {
                 //println!("get {}", msg.value)
 
-                if state.contains_key(&msg.value) {
+                if state.contains_key(&value) {
                     mx.snd
-                    .send(Msg {
-                        key: "Get response".to_string(),
-                        value: state[&msg.value].clone(),
-                    })
+                    .send(Msg::Kvp("Get response".to_string(), state[&value].clone()))
                     .unwrap();
                 }
             }
             _ => {
                 mx.snd
-                    .send(Msg {
-                        key: "Unknown error".to_string(),
-                        value: String::new(),
-                    })
+                    .send(Msg::Kvp("Unknown error".to_string(), String::new()))
                     .unwrap();
             }
         },

@@ -50,7 +50,14 @@ fn control(hds: Hds) {
                 let msg = hds.messenger
                 .rcv
                 .recv().unwrap();
-                println!("key '{param}' is '{}'", msg.value)
+
+                match msg {
+                    Msg::Kvp(key, value) => {
+                        println!("key '{param}' is '{}'", value)
+                    }
+                    _ => panic!("unknown message!")
+                }
+                
             }
             "exit" => {
                 break;
