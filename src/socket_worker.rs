@@ -6,6 +6,7 @@ use std::{
     },
     thread,
 };
+use rand::Rng;
 
 use crate::msg_exchange::MsgExchange;
 
@@ -38,10 +39,28 @@ impl SocketWorker {
 }
 
 fn worker_thread(socket: UdpSocket, wrk_mx: MsgExchange, stop_flag: Arc<AtomicBool>) {
-    let buf = [1];
-    socket.send(&buf).unwrap();
+    let mut task_stack = vec![];
+
+    task_stack.push(vec![1u8, 2, 3]);
 
     while !stop_flag.load(Ordering::Relaxed) {
-        todo!()
+        if task_stack.len() == 0 { continue; }
+        let body = &mut task_stack[0];
+
+        let buf = make_message(body);
+
+        socket.send(&buf).expect("Worker thread failed to send message");
+
+        task_stack.remove(0);
     }
+}
+
+fn make_message(body: &mut Vec<u8>) -> Vec<u8> {
+    let mut buf = vec![];
+    let msg_id: u32 = rand::thread_rng().gen_range(1..=2_000_000);
+    buf.copy_from_slice(&msg_id.to_be_bytes());
+    buf.push(0);
+    buf.append(body);
+
+    buf
 }
