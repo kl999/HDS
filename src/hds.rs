@@ -64,6 +64,7 @@ fn get_command(mx: &MsgExchange, state: &mut HashMap<String, String>) {
                     .unwrap();
             }
         },
+        Ok(_) => {}
         Err(_err) => {}
     }
 }

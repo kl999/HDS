@@ -52,7 +52,7 @@ fn control(hds: Hds) {
                 .recv().unwrap();
 
                 match msg {
-                    Msg::Kvp(key, value) => {
+                    Msg::Kvp(_, value) => {
                         println!("key '{param}' is '{}'", value)
                     }
                     _ => panic!("unknown message!")

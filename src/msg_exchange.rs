@@ -26,7 +26,8 @@ impl MsgExchange {
 
 #[derive(Debug)]
 pub enum Msg {
-    Kvp(String, String)
+    Kvp(String, String),
+    Send(String)
 }
 
 impl Msg {
