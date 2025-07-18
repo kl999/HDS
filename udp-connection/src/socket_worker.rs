@@ -31,23 +31,31 @@ impl SocketWorker {
 
     fn receive(&mut self) {
         let mut buf = [0; 1024];
-        let (number_of_bytes, src_addr) = &self.socket.recv_from(&mut buf).expect("Didn't receive data");
-        let msg = String::from_utf8_lossy(&buf[..*number_of_bytes]).to_string();
-        println!(
-            "Received {} bytes from {}: '{}'",
-            number_of_bytes, src_addr, msg
-        );
+        match &self.socket.recv_from(&mut buf) {
+            Ok((number_of_bytes, src_addr)) => {
+                let msg = String::from_utf8_lossy(&buf[..*number_of_bytes]).to_string();
+                println!(
+                    "Received {} bytes from {}: '{}'",
+                    number_of_bytes, src_addr, msg
+                );
 
-        self.incoming.insert(1, msg.clone()).unwrap();
-        (self.notify)(msg);
+                _ = self.incoming.insert(1, msg.clone());
+                (self.notify)(msg);
+
+            }
+            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                // No data is available right now
+            }
+            Err(e) => { panic!("On receive {}", e) }
+        }
     }
     
     fn send(&mut self) {
         if let Some(msg) = self.outgoing.front() {
             print!("Sending '{}'", msg);
             let buf = format!("{}", msg);
-            self.socket.send_to(buf.as_bytes(), "127.0.0.1:8080").unwrap();
-            let _ = self.outgoing.pop_front().expect("wtf?");
+            self.socket.send(buf.as_bytes()).unwrap();
+            _ = self.outgoing.pop_front().expect("wtf?");
         }
     }
 }

@@ -15,6 +15,7 @@ fn main() {
     match cmd.to_lowercase().trim() {
         "server" => {
             let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
+            sock.set_nonblocking(true).expect("on set nonblocking");
 
             let mut worker = SocketWorker::new(sock, |msg| println!("{}", msg));
 
@@ -25,6 +26,7 @@ fn main() {
         "client" => {
             let sock = UdpSocket::bind("127.0.0.1:0").unwrap();
             sock.connect("127.0.0.1:8080").expect("Not connected!");
+            sock.set_nonblocking(true).expect("on set nonblocking");
 
             let mut worker = SocketWorker::new(sock, |msg| println!("{}", msg));
 
