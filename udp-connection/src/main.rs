@@ -1,7 +1,9 @@
 use std::net::UdpSocket;
 use std::io;
 
-mod udp_socket;
+use crate::socket_worker::SocketWorker;
+
+mod socket_worker;
 
 fn main() {
     println!("Server or client?");
@@ -14,22 +16,23 @@ fn main() {
         "server" => {
             let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
 
+            let mut worker = SocketWorker::new(sock, |msg| println!("{}", msg));
+
             loop {
-                let mut buf = [0; 1024];
-                let (number_of_bytes, src_addr) = sock.recv_from(&mut buf).expect("Didn't receive data");
-                let msg = String::from_utf8_lossy(&buf[..number_of_bytes]).to_string();
-                println!(
-                    "Received {} bytes from {}: '{}'",
-                    number_of_bytes, src_addr, msg
-                );
+                worker.work();
             }
         }
         "client" => {
             let sock = UdpSocket::bind("127.0.0.1:0").unwrap();
             sock.connect("127.0.0.1:8080").expect("Not connected!");
 
-            let buf = format!("Hello!");
-            sock.send_to(buf.as_bytes(), "127.0.0.1:8080").unwrap();
+            let mut worker = SocketWorker::new(sock, |msg| println!("{}", msg));
+
+            worker.send_message("Hello".to_string());
+
+            loop {
+                worker.work();
+            }
         }
         _ => { println!("Wrong command!") }
     }
