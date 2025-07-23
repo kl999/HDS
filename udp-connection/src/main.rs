@@ -7,6 +7,9 @@ use crate::socket_worker::SocketWorker;
 mod socket_worker;
 mod message;
 
+#[cfg(test)]
+mod tests;
+
 fn main() {
     _message_test();
 
