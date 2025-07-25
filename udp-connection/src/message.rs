@@ -1,5 +1,5 @@
 use core::hash;
-use std::fmt;
+use std::{fmt, io::Read, ptr::hash};
 use sha2::{Sha256, Digest};
 
 /// A message struct that contains an ID, SHA-256 hash, and data payload.
@@ -114,6 +114,16 @@ impl Message {
         hasher.update(&self.data);
 
         self.hash[..] == hasher.finalize()[..]
+    }
+
+    pub fn serialize(&self) -> Box<[u8]> {
+        self.id.to_be_bytes()
+            .iter()
+            .chain(self.hash.iter())
+            .chain(self.data.iter())
+            .copied()
+            .collect::<Vec<u8>>()
+            .into_boxed_slice()
     }
 }
 
