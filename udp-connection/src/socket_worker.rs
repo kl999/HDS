@@ -1,17 +1,19 @@
 use std::{
-    collections::{HashMap, VecDeque}, net::UdpSocket
+    collections::{HashMap, VecDeque}, net::UdpSocket, rc::Rc
 };
+
+use crate::message::Message;
 
 pub struct SocketWorker
 {
     socket: UdpSocket,
-    outgoing: VecDeque<String>,
-    incoming: HashMap<u64, String>,
-    notify: fn(String),
+    outgoing: VecDeque<Message>,
+    incoming: HashMap<u64, Rc<Message>>,
+    notify: fn(Rc<Message>),
 }
 
 impl SocketWorker {
-    pub fn new(socket: UdpSocket, f: fn(String)) -> SocketWorker {
+    pub fn new(socket: UdpSocket, f: fn(Rc<Message>)) -> SocketWorker {
         SocketWorker {
             socket,
             outgoing: VecDeque::with_capacity(1000),
@@ -25,7 +27,7 @@ impl SocketWorker {
         self.send();
     }
 
-    pub fn send_message(&mut self, msg: String) {
+    pub fn send_message(&mut self, msg: Message) {
         self.outgoing.push_back(msg);
     }
 
@@ -33,15 +35,21 @@ impl SocketWorker {
         let mut buf = [0; 1024];
         match &self.socket.recv_from(&mut buf) {
             Ok((number_of_bytes, src_addr)) => {
-                let msg = String::from_utf8_lossy(&buf[..*number_of_bytes]).to_string();
+                let msg = Message::deserialize(&buf[..*number_of_bytes]);
                 println!(
-                    "Received {} bytes from {}: '{}'",
-                    number_of_bytes, src_addr, msg
+                    "Received {} bytes from {}: C({}) '{}'",
+                    number_of_bytes,
+                    src_addr,
+                    msg.check_hash(),
+                    msg
                 );
+
+                todo!("Check hash");
+
+                let msg = Rc::new(msg);
 
                 _ = self.incoming.insert(1, msg.clone());
                 (self.notify)(msg);
-
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 // No data is available right now
@@ -53,9 +61,11 @@ impl SocketWorker {
     fn send(&mut self) {
         if let Some(msg) = self.outgoing.front() {
             print!("Sending '{}'", msg);
-            let buf = format!("{}", msg);
-            self.socket.send(buf.as_bytes()).unwrap();
-            _ = self.outgoing.pop_front().expect("wtf?");
+            self.socket.send(&msg.serialize()).unwrap();
+            let msg = self.outgoing.pop_front().expect("wtf?");
+            self.outgoing.push_back(msg);
+
+            todo!("Delete received");
         }
     }
 }
