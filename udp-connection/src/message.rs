@@ -116,6 +116,26 @@ impl Message {
         self.hash[..] == hasher.finalize()[..]
     }
 
+    /// Serializes the message into a byte buffer.
+    /// 
+    /// The serialized format is:
+    /// - Bytes 0-8: Message ID (big-endian u64)
+    /// - Bytes 8-40: SHA-256 hash (32 bytes)
+    /// - Bytes 40+: Message data
+    /// 
+    /// # Returns
+    /// 
+    /// A boxed slice containing all message data concatenated together.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// # use udp_connection::Message;
+    /// let data = b"test".to_vec().into_boxed_slice();
+    /// let message = Message::new(123, data);
+    /// let serialized = message.serialize();
+    /// assert_eq!(serialized.len(), 8 + 32 + 4); // id + hash + data
+    /// ```
     pub fn serialize(&self) -> Box<[u8]> {
         self.id.to_be_bytes()
             .iter()
