@@ -50,6 +50,21 @@ impl Message {
         }
     }
 
+    pub fn new_acc(id: u64) -> Message {
+        let hash = [0u8; 32]
+            .to_vec().into_boxed_slice();
+        let data = 1u8.to_be_bytes().iter()
+            .chain(id.to_be_bytes().iter())
+            .copied().collect::<Vec<u8>>().into_boxed_slice();
+        let id = 0u64;
+
+        Message {
+            id,
+            hash,
+            data,
+        }
+    }
+
     /// Deserializes a byte buffer into a Message.
     ///
     /// The expected format is:

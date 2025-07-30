@@ -36,6 +36,11 @@ impl SocketWorker {
         self.outgoing.push_back(msg);
     }
 
+    fn send_acc_message(&mut self, id: u64) {
+        let msg = Message::new_acc(id);
+        self.outgoing.push_front(msg);
+    }
+
     fn receive(&mut self) {
         let mut buf = [0; 1024];
         match &self.socket.recv_from(&mut buf) {
@@ -53,8 +58,14 @@ impl SocketWorker {
                     return;
                 }
 
+                self.send_acc_message(msg.id);
+
                 if msg.id == 0 {
                     self.handle_ctrl(msg);
+                    return;
+                }
+
+                if self.incoming.contains_key(&msg.id) {
                     return;
                 }
 

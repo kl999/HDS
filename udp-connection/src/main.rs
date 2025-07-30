@@ -55,10 +55,7 @@ fn run_client() {
         println!("{}", msg)
     });
 
-    worker.send_message(Message::new(
-    1,
-    "Hello".as_bytes().to_vec().into_boxed_slice()
-    ));
+    worker.send_message("Hello".as_bytes().to_vec().into_boxed_slice());
 
     loop {
         worker.work();
