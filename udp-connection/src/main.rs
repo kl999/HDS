@@ -6,6 +6,7 @@ use crate::socket_worker::SocketWorker;
 
 mod socket_worker;
 mod message;
+mod socket_worker_handshake;
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +37,7 @@ fn run_server() {
     let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
     sock.set_nonblocking(true).expect("on set nonblocking");
 
-    let mut worker = SocketWorker::new(sock, |msg| println!("{}", msg));
+    let mut worker = SocketWorker::new(sock, None, |msg| println!("{}", msg));
 
     loop {
         worker.work();
@@ -50,6 +51,7 @@ fn run_client() {
 
     let mut worker = SocketWorker::new(
     sock,
+    "127.0.0.1:8080".to_string(),
     |msg| {
         let msg = String::from_utf8_lossy(&msg.data[..]);
         println!("{}", msg)

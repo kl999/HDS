@@ -8,6 +8,7 @@ use crate::message::Message;
 
 pub struct SocketWorker {
     socket: UdpSocket,
+    address: String,
     outgoing: VecDeque<Message>,
     incoming: HashMap<u64, Rc<Message>>,
     notify: fn(Rc<Message>),
@@ -15,9 +16,10 @@ pub struct SocketWorker {
 }
 
 impl SocketWorker {
-    pub fn new(socket: UdpSocket, f: fn(Rc<Message>)) -> SocketWorker {
+    pub fn new(socket: UdpSocket, address: String, f: fn(Rc<Message>)) -> SocketWorker {
         SocketWorker {
             socket,
+            address,
             outgoing: VecDeque::with_capacity(1000),
             incoming: HashMap::new(),
             notify: f,
@@ -86,7 +88,7 @@ impl SocketWorker {
     fn send(&mut self) {
         if let Some(msg) = self.outgoing.front() {
             print!("Sending '{}'", msg);
-            self.socket.send(&msg.serialize()).unwrap();
+            self.socket.send_to(&msg.serialize(), &self.address).unwrap();
             let msg = self.outgoing.pop_front().expect("wtf?");
             self.outgoing.push_back(msg);
         }
