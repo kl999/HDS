@@ -1,31 +1,86 @@
-use std::net::UdpSocket;
+use std::{
+    io::Error,
+    net::{SocketAddr, UdpSocket},
+    rc::Rc,
+};
 
-use crate::socket_worker::SocketWorker;
+use crate::{message::Message, socket_worker::SocketWorker};
 
-pub fn receive_handshake(address: String) -> std::io::Result<SocketWorker> {
+pub fn receive_handshake(
+    address: String,
+    notify: fn(Rc<Message>),
+) -> std::io::Result<SocketWorker> {
+    let sock = UdpSocket::bind(&address)?;
 
+    //sock.set_nonblocking(true)?;
+
+    let new_sock = expect_handshake(sock)?;
+
+    Ok(SocketWorker::new(new_sock, address, notify))
 }
 
-pub fn send_handshake(address: String) -> std::io::Result<SocketWorker> {
+pub fn send_handshake(address: String, notify: fn(Rc<Message>)) -> std::io::Result<SocketWorker> {
+    let sock = UdpSocket::bind(&address)?;
 
+    let buf = "hello".as_bytes();
+    sock.send_to(buf, address)?;
+
+    let mut buf = [0; 20];
+
+    let (number_of_bytes, server_address) = sock.recv_from(&mut buf)?;
+    let msg = String::from_utf8_lossy(&buf[..number_of_bytes]).to_string();
+
+    if !msg.starts_with("Connect port ") {
+        return Err(Error::new(
+            std::io::ErrorKind::Unsupported,
+            format!("Unknown message '{}'", msg),
+        ));
+    }
+
+    let num_str = &msg[13..].trim();
+
+    let port = match num_str.parse::<u16>() {
+        Ok(num) => num,
+        Err(_) => {
+            return Err(Error::new(
+                std::io::ErrorKind::Unsupported,
+                format!("Unknown port format '{}'", msg),
+            ))
+        }
+    };
+
+    let socket_addr = SocketAddr::new(server_address.ip(), port);
+
+    let new_sock = UdpSocket::bind(&socket_addr)?;
+
+    Ok(SocketWorker::new(
+        new_sock,
+        server_address.ip().to_string(),
+        notify,
+    ))
 }
 
-fn expect_handshake(sock: &UdpSocket) {
+fn expect_handshake(sock: UdpSocket) -> std::io::Result<UdpSocket> {
     let mut buf = [0; 5];
-    let (number_of_bytes, src_addr) = sock.recv_from(&mut buf).expect("Didn't receive data");
+
+    let (number_of_bytes, src_addr) = sock.recv_from(&mut buf)?;
     let msg = String::from_utf8_lossy(&buf[..number_of_bytes]).to_string();
     println!(
         "Received {} bytes from {}: '{}'",
         number_of_bytes, src_addr, msg
     );
     if msg == "Hello" {
-        println!("handshaking");
-        let con = UdpSocket::bind("127.0.0.1:0").unwrap();
-        let port = con.local_addr().unwrap().port();
+        let con = UdpSocket::bind("127.0.0.1:0")?;
+        let port = con.local_addr()?.port();
         let buf = format!("Connect port {}", port);
-        sock.send_to(buf.as_bytes(), src_addr).unwrap();
+        sock.send_to(buf.as_bytes(), src_addr)?;
         //echo "Hello" | nc -u -w1 127.0.0.1 8080
 
-        let worker = SocketWorker::new(con);
+        return Ok(con);
     }
+
+    Err(Error::new(
+        std::io::ErrorKind::Unsupported,
+        format!("Unknown message '{}'", msg),
+    ))
 }
