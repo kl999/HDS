@@ -14,15 +14,15 @@ pub fn receive_handshake(
 
     //sock.set_nonblocking(true)?;
 
-    let new_sock = expect_handshake(sock)?;
+    let (new_sock, new_adr) = expect_handshake(sock)?;
 
-    Ok(SocketWorker::new(new_sock, address, notify))
+    Ok(SocketWorker::new(new_sock, new_adr, notify))
 }
 
 pub fn send_handshake(address: String, notify: fn(Rc<Message>)) -> std::io::Result<SocketWorker> {
-    let sock = UdpSocket::bind(&address)?;
+    let sock = UdpSocket::bind("127.0.0.1:0")?;
 
-    let buf = "hello".as_bytes();
+    let buf = "Hello".as_bytes();
     sock.send_to(buf, address)?;
 
     let mut buf = [0; 20];
@@ -51,16 +51,14 @@ pub fn send_handshake(address: String, notify: fn(Rc<Message>)) -> std::io::Resu
 
     let socket_addr = SocketAddr::new(server_address.ip(), port);
 
-    let new_sock = UdpSocket::bind(&socket_addr)?;
-
     Ok(SocketWorker::new(
-        new_sock,
-        server_address.ip().to_string(),
+        sock,
+        socket_addr.to_string(),
         notify,
     ))
 }
 
-fn expect_handshake(sock: UdpSocket) -> std::io::Result<UdpSocket> {
+fn expect_handshake(sock: UdpSocket) -> std::io::Result<(UdpSocket, String)> {
     let mut buf = [0; 5];
 
     let (number_of_bytes, src_addr) = sock.recv_from(&mut buf)?;
@@ -76,11 +74,11 @@ fn expect_handshake(sock: UdpSocket) -> std::io::Result<UdpSocket> {
         sock.send_to(buf.as_bytes(), src_addr)?;
         //echo "Hello" | nc -u -w1 127.0.0.1 8080
 
-        return Ok(con);
+        return Ok((con, src_addr.to_string()));
+    } else {
+        Err(Error::new(
+            std::io::ErrorKind::Unsupported,
+            format!("Unknown message '{}'", msg),
+        ))
     }
-
-    Err(Error::new(
-        std::io::ErrorKind::Unsupported,
-        format!("Unknown message '{}'", msg),
-    ))
 }

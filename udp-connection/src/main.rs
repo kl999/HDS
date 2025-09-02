@@ -1,8 +1,8 @@
-use std::net::UdpSocket;
 use std::io;
+use std::net::UdpSocket;
 
 use crate::message::Message;
-use crate::socket_worker::SocketWorker;
+use crate::socket_worker_handshake::{receive_handshake, send_handshake};
 
 mod socket_worker;
 mod message;
@@ -13,6 +13,11 @@ mod tests;
 
 fn main() {
     //_message_test();
+
+    /*let socket1 = UdpSocket::bind("127.0.0.1:0").unwrap();
+    let socket2 = UdpSocket::bind("127.0.0.1:0").unwrap();
+
+    print!("{:?} | {:?}", socket1.local_addr(), socket2.local_addr());*/
 
     _socket_test();
 
@@ -34,10 +39,9 @@ fn _socket_test() {
 }
 
 fn run_server() {
-    let sock = UdpSocket::bind("127.0.0.1:8080").unwrap();
-    sock.set_nonblocking(true).expect("on set nonblocking");
-
-    let mut worker = SocketWorker::new(sock, None, |msg| println!("{}", msg));
+    let mut worker = receive_handshake(
+        "127.0.0.1:8080".to_string(),
+        |msg| print!("{}", msg)).unwrap();
 
     loop {
         worker.work();
@@ -45,19 +49,11 @@ fn run_server() {
 }
 
 fn run_client() {
-    let sock = UdpSocket::bind("127.0.0.1:0").unwrap();
-    sock.connect("127.0.0.1:8080").expect("Not connected!");
-    sock.set_nonblocking(true).expect("on set nonblocking");
-
-    let mut worker = SocketWorker::new(
-    sock,
-    "127.0.0.1:8080".to_string(),
-    |msg| {
-        let msg = String::from_utf8_lossy(&msg.data[..]);
-        println!("{}", msg)
-    });
-
-    worker.send_message("Hello".as_bytes().to_vec().into_boxed_slice());
+    let mut worker = send_handshake(
+        "127.0.0.1:8080".to_string(),
+        |msg| print!("{}", msg)).unwrap();
+    
+    worker.send_message("Aaa it worked!".as_bytes().to_vec().into_boxed_slice());
 
     loop {
         worker.work();
