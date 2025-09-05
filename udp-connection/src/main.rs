@@ -1,5 +1,4 @@
 use std::io;
-use std::net::UdpSocket;
 
 use crate::message::Message;
 use crate::socket_worker_handshake::{receive_handshake, send_handshake};
@@ -43,7 +42,10 @@ fn run_server() {
         "127.0.0.1:8080".to_string(),
         |msg| print!("{}", msg)).unwrap();
 
+    println!("Made worker {:?}", worker);
+
     loop {
+        //println!("work");
         worker.work();
     }
 }
@@ -52,10 +54,13 @@ fn run_client() {
     let mut worker = send_handshake(
         "127.0.0.1:8080".to_string(),
         |msg| print!("{}", msg)).unwrap();
+
+    println!("Made worker {:?}", worker);
     
     worker.send_message("Aaa it worked!".as_bytes().to_vec().into_boxed_slice());
 
     loop {
+        //println!("work");
         worker.work();
     }
 }

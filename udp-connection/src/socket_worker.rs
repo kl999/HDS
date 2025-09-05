@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, VecDeque},
+    fmt::Debug,
     net::UdpSocket,
     rc::Rc,
 };
@@ -88,7 +89,9 @@ impl SocketWorker {
     fn send(&mut self) {
         if let Some(msg) = self.outgoing.front() {
             print!("Sending '{}'", msg);
-            self.socket.send_to(&msg.serialize(), &self.address).unwrap();
+            self.socket
+                .send_to(&msg.serialize(), &self.address)
+                .unwrap();
             let msg = self.outgoing.pop_front().expect("wtf?");
             self.outgoing.push_back(msg);
         }
@@ -110,5 +113,18 @@ impl SocketWorker {
                 panic!("Unknown message {}", msg.data[0]);
             }
         }
+    }
+}
+
+impl Debug for SocketWorker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SocketWorker")
+            .field("socket", &self.socket)
+            .field("address", &self.address)
+            .field("outgoing", &self.outgoing.len())
+            .field("incoming", &self.incoming.len())
+            .field("notify", &self.notify)
+            .field("message_id", &self.message_id)
+            .finish()
     }
 }

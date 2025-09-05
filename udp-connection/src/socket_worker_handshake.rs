@@ -12,9 +12,9 @@ pub fn receive_handshake(
 ) -> std::io::Result<SocketWorker> {
     let sock = UdpSocket::bind(&address)?;
 
-    //sock.set_nonblocking(true)?;
-
     let (new_sock, new_adr) = expect_handshake(sock)?;
+
+    new_sock.set_nonblocking(true)?;
 
     Ok(SocketWorker::new(new_sock, new_adr, notify))
 }
@@ -50,6 +50,8 @@ pub fn send_handshake(address: String, notify: fn(Rc<Message>)) -> std::io::Resu
     };
 
     let socket_addr = SocketAddr::new(server_address.ip(), port);
+
+    sock.set_nonblocking(true)?;
 
     Ok(SocketWorker::new(
         sock,
