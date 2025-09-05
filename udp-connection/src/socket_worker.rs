@@ -57,6 +57,24 @@ impl SocketWorker {
                     msg
                 );
 
+                if msg.id == 0 {
+                    match msg.get_control() {
+                        crate::control_message::ControlMessage::Acc { id } => {
+                            match &self.outgoing.front() {
+                                Some(out_msg) => if out_msg.id == id {
+                                    _ = &self.outgoing.pop_front().expect("wtf?");
+                                },
+                                None => return,
+                            }
+                        }
+                        msg => {
+                            panic!("Unknown control message ({:?})", msg);
+                        }
+                    }
+
+                    return;
+                }
+
                 if !msg.check_hash() {
                     return;
                 }

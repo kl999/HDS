@@ -1,6 +1,8 @@
 use sha2::{Digest, Sha256};
 use std::fmt;
 
+use crate::control_message::ControlMessage;
+
 /// A message struct that contains an ID, SHA-256 hash, and data payload.
 /// The hash is computed from the ID and data to ensure message integrity.
 pub struct Message {
@@ -51,18 +53,17 @@ impl Message {
     }
 
     pub fn new_acc(id: u64) -> Message {
-        let hash = [0u8; 32]
-            .to_vec().into_boxed_slice();
-        let data = 1u8.to_be_bytes().iter()
+        let hash = [0u8; 32].to_vec().into_boxed_slice();
+        let data = 1u8
+            .to_be_bytes()
+            .iter()
             .chain(id.to_be_bytes().iter())
-            .copied().collect::<Vec<u8>>().into_boxed_slice();
+            .copied()
+            .collect::<Vec<u8>>()
+            .into_boxed_slice();
         let id = 0u64;
 
-        Message {
-            id,
-            hash,
-            data,
-        }
+        Message { id, hash, data }
     }
 
     /// Deserializes a byte buffer into a Message.
@@ -103,6 +104,20 @@ impl Message {
         let data = ser[40..].to_vec().into_boxed_slice();
 
         Message { id, hash, data }
+    }
+
+    pub fn get_control(self) -> ControlMessage {
+        if self.id != 0 {
+            panic!("It is not control message!")
+        }
+
+        match u8::from_be_bytes((&self.data[..1]).try_into().expect("wtf?")) {
+            1 => {
+                let msg_id = u64::from_be_bytes((&self.data[1..5]).try_into().expect("wtf?"));
+                ControlMessage::Acc { id: msg_id }
+            }
+            type_id => panic!("Unknown type ({})!", type_id),
+        }
     }
 
     /// Verifies the integrity of the message by checking its hash.

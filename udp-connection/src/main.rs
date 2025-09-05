@@ -6,6 +6,7 @@ use crate::socket_worker_handshake::{receive_handshake, send_handshake};
 mod socket_worker;
 mod message;
 mod socket_worker_handshake;
+mod control_message;
 
 #[cfg(test)]
 mod tests;
