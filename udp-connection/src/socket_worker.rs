@@ -67,9 +67,9 @@ impl SocketWorker {
                                 None => return,
                             }
                         }
-                        msg => {
+                        /*msg => {
                             panic!("Unknown control message ({:?})", msg);
-                        }
+                        }*/
                     }
 
                     return;
@@ -110,8 +110,10 @@ impl SocketWorker {
             self.socket
                 .send_to(&msg.serialize(), &self.address)
                 .unwrap();
-            let msg = self.outgoing.pop_front().expect("wtf?");
-            self.outgoing.push_back(msg);
+            let msg = self.outgoing.pop_front().expect("send wtf?");
+            if msg.id != 0 {
+                self.outgoing.push_back(msg);
+            }
         }
     }
 

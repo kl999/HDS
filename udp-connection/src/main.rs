@@ -1,4 +1,5 @@
-use std::io;
+use std::time::Duration;
+use std::{io, thread};
 
 use crate::message::Message;
 use crate::socket_worker_handshake::{receive_handshake, send_handshake};
@@ -48,6 +49,8 @@ fn run_server() {
     loop {
         //println!("work");
         worker.work();
+
+        thread::sleep(Duration::from_millis(100));
     }
 }
 
@@ -63,6 +66,8 @@ fn run_client() {
     loop {
         //println!("work");
         worker.work();
+
+        thread::sleep(Duration::from_millis(100));
     }
 }
 

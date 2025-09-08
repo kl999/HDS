@@ -113,7 +113,7 @@ impl Message {
 
         match u8::from_be_bytes((&self.data[..1]).try_into().expect("wtf?")) {
             1 => {
-                let msg_id = u64::from_be_bytes((&self.data[1..5]).try_into().expect("wtf?"));
+                let msg_id = u64::from_be_bytes((&self.data[1..9]).try_into().unwrap());
                 ControlMessage::Acc { id: msg_id }
             }
             type_id => panic!("Unknown type ({})!", type_id),
