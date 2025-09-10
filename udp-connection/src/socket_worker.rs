@@ -58,20 +58,7 @@ impl SocketWorker {
                 );
 
                 if msg.id == 0 {
-                    match msg.get_control() {
-                        crate::control_message::ControlMessage::Acc { id } => {
-                            match &self.outgoing.front() {
-                                Some(out_msg) => if out_msg.id == id {
-                                    _ = &self.outgoing.pop_front().expect("wtf?");
-                                },
-                                None => return,
-                            }
-                        }
-                        /*msg => {
-                            panic!("Unknown control message ({:?})", msg);
-                        }*/
-                    }
-
+                    self.handle_ctrl(msg);
                     return;
                 }
 
@@ -81,18 +68,13 @@ impl SocketWorker {
 
                 self.send_acc_message(msg.id);
 
-                if msg.id == 0 {
-                    self.handle_ctrl(msg);
-                    return;
-                }
-
                 if self.incoming.contains_key(&msg.id) {
                     return;
                 }
 
                 let msg = Rc::new(msg);
 
-                _ = self.incoming.insert(1, msg.clone());
+                _ = self.incoming.insert(msg.id, msg.clone());
                 (self.notify)(msg);
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -106,7 +88,7 @@ impl SocketWorker {
 
     fn send(&mut self) {
         if let Some(msg) = self.outgoing.front() {
-            print!("Sending '{}'", msg);
+            println!("Sending '{}'", msg);
             self.socket
                 .send_to(&msg.serialize(), &self.address)
                 .unwrap();
@@ -118,20 +100,14 @@ impl SocketWorker {
     }
 
     fn handle_ctrl(&mut self, msg: Message) {
-        match msg.data[0] {
-            1 => {
-                let id = u64::from_be_bytes(msg.data[1..9].try_into().expect("Error casting id!"));
-
-                let rem_ind = self
-                    .outgoing
-                    .iter()
-                    .position(|i| i.id == id)
-                    .expect("No outgoing to remove!");
-                self.outgoing.remove(rem_ind);
-            }
-            _ => {
-                panic!("Unknown message {}", msg.data[0]);
-            }
+        match msg.get_control() {
+            crate::control_message::ControlMessage::Acc { id } => {
+                if let Some(rem_ind) = self.outgoing.iter().position(|i| i.id == id) {
+                    self.outgoing.remove(rem_ind);
+                }
+            } /*msg => {
+                  panic!("Unknown control message ({:?})", msg);
+              }*/
         }
     }
 }
