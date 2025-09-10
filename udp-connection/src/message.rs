@@ -52,6 +52,27 @@ impl Message {
         }
     }
 
+    /// Creates a new acknowledgment message for a given message ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID of the message being acknowledged
+    ///
+    /// # Returns
+    ///
+    /// A new Message with:
+    /// - ID set to 0 (indicating a control message)
+    /// - Empty hash (32 zero bytes)
+    /// - Data containing the message type (1 for ACK) and the acknowledged message ID
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use udp_connection::Message;
+    /// let ack = Message::new_acc(42);
+    /// assert_eq!(ack.id, 0); // Control messages always have ID 0
+    /// assert_eq!(ack.data.len(), 9); // 1 byte type + 8 bytes message ID
+    /// ```
     pub fn new_acc(id: u64) -> Message {
         let hash = [0u8; 32].to_vec().into_boxed_slice();
         let data = 1u8
@@ -106,6 +127,32 @@ impl Message {
         Message { id, hash, data }
     }
 
+    /// Converts this message into a ControlMessage if it is a control message (id = 0).
+    ///
+    /// # Returns
+    ///
+    /// A ControlMessage variant based on the message data.
+    ///
+    /// # Panics
+    ///
+    /// * If the message ID is not 0 (not a control message)
+    /// * If the control message type is unknown
+    /// * If the message data is malformed
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use udp_connection::Message;
+    /// # use udp_connection::ControlMessage;
+    /// // Create an acknowledgment control message
+    /// let ack = Message::new_acc(123);
+    /// 
+    /// // Convert it to a ControlMessage
+    /// let control = ack.get_control();
+    /// match control {
+    ///     ControlMessage::Acc { id } => assert_eq!(id, 123),
+    /// }
+    /// ```
     pub fn get_control(self) -> ControlMessage {
         if self.id != 0 {
             panic!("It is not control message!")
