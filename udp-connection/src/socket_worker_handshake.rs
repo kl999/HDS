@@ -6,6 +6,25 @@ use std::{
 
 use crate::{message::Message, socket_worker::SocketWorker};
 
+/// Sets up a UDP server that waits for client handshake requests.
+///
+/// Creates a socket on the specified address, waits for a "Hello" message,
+/// then creates a dedicated communication channel with the client.
+///
+/// # Arguments
+///
+/// * `address` - Server bind address (e.g., "127.0.0.1:8080")
+/// * `notify` - Callback function for received messages
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use udp_connection::socket_worker_handshake::receive_handshake;
+/// let mut worker = receive_handshake(
+///     "127.0.0.1:8080".to_string(),
+///     |msg| println!("Received: {}", msg)
+/// ).expect("Failed to start server");
+/// ```
 pub fn receive_handshake(
     address: String,
     notify: fn(Rc<Message>),
@@ -19,6 +38,25 @@ pub fn receive_handshake(
     Ok(SocketWorker::new(new_sock, new_adr, notify))
 }
 
+/// Initiates a handshake with a UDP server and establishes connection.
+///
+/// Sends "Hello" to the server, receives connection details, and creates
+/// a SocketWorker for reliable message exchange.
+///
+/// # Arguments
+///
+/// * `address` - Server address to connect to (e.g., "127.0.0.1:8080")
+/// * `notify` - Callback function for received messages
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use udp_connection::socket_worker_handshake::send_handshake;
+/// let mut worker = send_handshake(
+///     "127.0.0.1:8080".to_string(),
+///     |msg| println!("Received: {}", msg)
+/// ).expect("Failed to connect");
+/// ```
 pub fn send_handshake(address: String, notify: fn(Rc<Message>)) -> std::io::Result<SocketWorker> {
     let sock = UdpSocket::bind("127.0.0.1:0")?;
 
@@ -60,6 +98,22 @@ pub fn send_handshake(address: String, notify: fn(Rc<Message>)) -> std::io::Resu
     ))
 }
 
+/// Handles server-side handshake protocol.
+///
+/// Waits for "Hello" message, creates a new dedicated socket,
+/// and sends "Connect port {port}" response to the client.
+///
+/// # Returns
+///
+/// Tuple of (dedicated_socket, client_address_string)
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use std::net::UdpSocket;
+/// let server_socket = UdpSocket::bind("127.0.0.1:8080").unwrap();
+/// // expect_handshake waits for "Hello" and creates dedicated channel
+/// ```
 fn expect_handshake(sock: UdpSocket) -> std::io::Result<(UdpSocket, String)> {
     let mut buf = [0; 5];
 
